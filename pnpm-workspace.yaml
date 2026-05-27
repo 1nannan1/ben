@@ -94,7 +94,7 @@ catalog:
   '@vueuse/core': ^14.3.0
   '@vueuse/integrations': ^14.3.0
   '@vueuse/motion': ^3.0.3
-  archiver: ^7.0.1
+  archiver: ^8.0.0
   axios: ^1.16.1
   axios-mock-adapter: ^2.1.0
   cac: ^7.0.0
