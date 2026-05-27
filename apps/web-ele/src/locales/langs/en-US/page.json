@@ -10,6 +10,18 @@
   "dashboard": {
     "title": "Dashboard",
     "analytics": "Analytics",
-    "workspace": "Workspace"
+    "workspace": "Workspace",
+    "aichat": {
+      "title": "AI Chat"
+    },
+    "prompt": {
+      "title": "Prompt"
+    },
+    "setting": {
+      "title": "Setting"
+    },
+    "users": {
+      "title": "Users"
+    }
   }
 }

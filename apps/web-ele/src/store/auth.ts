@@ -1,5 +1,7 @@
 import type { Recordable, UserInfo } from '@vben/types';
 
+import type { AuthApi } from '#/api/core/auth';
+
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -23,17 +25,17 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * 异步处理登录操作
    * Asynchronously handle the login process
-   * @param params 登录表单数据
+   * @param params 登录表单数据（支持 email/password 或其他格式）
    */
   async function authLogin(
-    params: Recordable<any>,
+    params: AuthApi.LoginParams | Recordable<any>,
     onSuccess?: () => Promise<void> | void,
   ) {
     // 异步处理用户登录操作并获取 accessToken
     let userInfo: null | UserInfo = null;
     try {
       loginLoading.value = true;
-      const { accessToken } = await loginApi(params);
+      const { accessToken } = await loginApi(params as AuthApi.LoginParams);
 
       // 如果成功获取到 accessToken
       if (accessToken) {
@@ -54,11 +56,10 @@ export const useAuthStore = defineStore('auth', () => {
         if (accessStore.loginExpired) {
           accessStore.setLoginExpired(false);
         } else {
-          onSuccess
-            ? await onSuccess?.()
-            : await router.push(
-                userInfo.homePath || preferences.app.defaultHomePath,
-              );
+          // 使用非空断言，因为前面已经检查了 userInfo 不为 null
+          const homePath =
+            userInfo?.homePath || preferences.app.defaultHomePath;
+          onSuccess ? await onSuccess?.() : await router.push(homePath);
         }
 
         if (userInfo?.realName) {
@@ -98,8 +99,21 @@ export const useAuthStore = defineStore('auth', () => {
     });
   }
 
+  /**
+   * 获取用户信息
+   * 如果用户未登录或会话过期，返回 null 并触发登出流程
+   * @returns 用户信息对象，如果未登录则返回 null
+   */
   async function fetchUserInfo() {
     const userInfo = await getUserInfoApi();
+
+    // 如果获取用户信息失败（用户未登录），触发登出
+    if (!userInfo) {
+      console.warn('无法获取用户信息，可能需要重新登录');
+      await logout(false);
+      return null;
+    }
+
     userStore.setUserInfo(userInfo);
     return userInfo;
   }

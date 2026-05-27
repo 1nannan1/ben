@@ -9,5 +9,7 @@ export const overridesPreferences = defineOverridesPreferences({
   // overrides
   app: {
     name: import.meta.env.VITE_APP_TITLE,
+    // 默认首页路径（登录成功后跳转的页面）
+    defaultHomePath: '/dashboard/analytics',
   },
 });

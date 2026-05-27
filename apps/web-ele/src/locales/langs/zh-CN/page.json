@@ -11,5 +11,17 @@
     "title": "概览",
     "analytics": "分析页",
     "workspace": "工作台"
+  },
+  "aichat": {
+    "title": "ai聊天"
+  },
+  "prompt": {
+    "title": "提示词"
+  },
+  "setting": {
+    "title": "设置"
+  },
+  "users": {
+    "title": "用户"
   }
 }
