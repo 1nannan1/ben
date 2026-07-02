@@ -1,90 +1,110 @@
 <script lang="ts" setup>
-import type { AnalysisOverviewItem } from '@vben/common-ui';
-import type { TabOption } from '@vben/types';
+import type {
+  DashboardStats,
+  ModelUsage,
+  TrendItem,
+} from '#/api/system/dashboard';
 
+import { onMounted, ref } from 'vue';
+
+import { Page } from '@vben/common-ui';
+
+import { ElRow } from 'element-plus';
+
+/** API 接口 */
 import {
-  AnalysisChartCard,
-  AnalysisChartsTabs,
-  AnalysisOverview,
-} from '@vben/common-ui';
-import {
-  SvgBellIcon,
-  SvgCakeIcon,
-  SvgCardIcon,
-  SvgDownloadIcon,
-} from '@vben/icons';
+  getDashboardStats,
+  getModelUsage,
+  getTrendData,
+} from '#/api/system/dashboard';
+import { $t } from '#/locales';
 
-import AnalyticsTrends from './analytics-trends.vue';
-import AnalyticsVisitsData from './analytics-visits-data.vue';
-import AnalyticsVisitsSales from './analytics-visits-sales.vue';
-import AnalyticsVisitsSource from './analytics-visits-source.vue';
-import AnalyticsVisits from './analytics-visits.vue';
+/** 子组件 */
+import CostTrendChart from './components/CostTrendChart.vue';
+import KpiCards from './components/KpiCards.vue';
+import ModelTokenBar from './components/ModelTokenBar.vue';
+import ModelUsagePie from './components/ModelUsagePie.vue';
+import RecentActivities from './components/RecentActivities.vue';
+import TokenTrendChart from './components/TokenTrendChart.vue';
+import TopUsersTable from './components/TopUsersTable.vue';
 
-const overviewItems: AnalysisOverviewItem[] = [
-  {
-    icon: SvgCardIcon,
-    title: '用户量',
-    totalTitle: '总用户量',
-    totalValue: 120_000,
-    value: 2000,
-  },
-  {
-    icon: SvgCakeIcon,
-    title: '访问量',
-    totalTitle: '总访问量',
-    totalValue: 500_000,
-    value: 20_000,
-  },
-  {
-    icon: SvgDownloadIcon,
-    title: '下载量',
-    totalTitle: '总下载量',
-    totalValue: 120_000,
-    value: 8000,
-  },
-  {
-    icon: SvgBellIcon,
-    title: '使用量',
-    totalTitle: '总使用量',
-    totalValue: 50_000,
-    value: 5000,
-  },
-];
+// ==================== 响应式数据 ====================
 
-const chartTabs: TabOption[] = [
-  {
-    label: '流量趋势',
-    value: 'trends',
-  },
-  {
-    label: '月访问量',
-    value: 'visits',
-  },
-];
+/** 全局加载状态 */
+const loading = ref(false);
+
+/** 概览统计数据 */
+const stats = ref<DashboardStats>({
+  activeUsers: 0,
+  totalConversations: 0,
+  totalCost: '0',
+  totalMessages: 0,
+  totalTokens: 0,
+  totalUsers: 0,
+});
+
+/** 趋势数据 */
+const trendData = ref<TrendItem[]>([]);
+
+/** 模型使用统计 */
+const modelUsage = ref<ModelUsage[]>([]);
+
+/**
+ * 并行加载仪表盘核心数据（图表和 KPI）
+ * 用户排行和最近活动由子组件自行通过后端分页加载
+ */
+async function fetchDashboardData() {
+  loading.value = true;
+  try {
+    const [statsRes, trendRes, modelRes] = await Promise.all([
+      getDashboardStats(),
+      getTrendData(),
+      getModelUsage(),
+    ]);
+
+    stats.value = statsRes;
+    trendData.value = trendRes;
+    modelUsage.value = modelRes;
+  } catch (error) {
+    console.error($t('page.dashboard.fetchFailed'), error);
+  } finally {
+    loading.value = false;
+  }
+}
+
+// 组件挂载时加载数据
+onMounted(() => {
+  fetchDashboardData();
+});
 </script>
 
 <template>
-  <div class="p-5">
-    <AnalysisOverview :items="overviewItems" />
-    <AnalysisChartsTabs :tabs="chartTabs" class="mt-5">
-      <template #trends>
-        <AnalyticsTrends />
-      </template>
-      <template #visits>
-        <AnalyticsVisits />
-      </template>
-    </AnalysisChartsTabs>
+  <Page v-loading="loading" :title="$t('page.dashboard.title')">
+    <!-- ========== 第一部分：KPI 统计卡片（6个） ========== -->
+    <KpiCards :stats="stats" :loading="loading" />
 
-    <div class="mt-5 w-full md:flex">
-      <AnalysisChartCard class="mt-5 md:mt-0 md:mr-4 md:w-1/3" title="访问数量">
-        <AnalyticsVisitsData />
-      </AnalysisChartCard>
-      <AnalysisChartCard class="mt-5 md:mt-0 md:mr-4 md:w-1/3" title="访问来源">
-        <AnalyticsVisitsSource />
-      </AnalysisChartCard>
-      <AnalysisChartCard class="mt-5 md:mt-0 md:w-1/3" title="访问来源">
-        <AnalyticsVisitsSales />
-      </AnalysisChartCard>
+    <!-- ========== 第二部分：趋势分析（折线图） ========== -->
+    <ElRow :gutter="16" class="mb-5">
+      <TokenTrendChart :data="trendData" :loading="loading" />
+      <CostTrendChart :data="trendData" :loading="loading" />
+    </ElRow>
+
+    <!-- ========== 第三部分：业务分析（饼图 + 柱状图） ========== -->
+    <ElRow :gutter="16" class="mb-5">
+      <ModelUsagePie :data="modelUsage" :loading="loading" />
+      <ModelTokenBar :data="modelUsage" :loading="loading" />
+    </ElRow>
+
+    <!-- ========== 第四部分：用户排行表格（整行） ========== -->
+    <div class="mb-5">
+      <TopUsersTable :loading="loading" />
     </div>
-  </div>
+
+    <!-- ========== 第五部分：最近活动时间线（整行） ========== -->
+    <RecentActivities :loading="loading" />
+  </Page>
 </template>
+
+<style scoped>
+/* 页面级样式 */
+</style>

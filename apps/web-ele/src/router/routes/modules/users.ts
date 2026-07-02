@@ -10,6 +10,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       icon: 'lucide:user',
       title: $t('page.users.title'),
+      authority: ['admin'],
     },
   },
 ];

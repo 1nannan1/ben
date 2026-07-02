@@ -10,6 +10,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       icon: 'uil:setting',
       title: $t('page.setting.title'),
+      authority: ['admin'],
     },
   },
 ];

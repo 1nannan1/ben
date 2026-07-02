@@ -4,12 +4,12 @@ import { $t } from '#/locales';
 
 const routes: RouteRecordRaw[] = [
   {
-    name: 'prompt',
-    path: '/prompt',
-    component: () => import('#/views/prompt/index.vue'),
+    name: 'message',
+    path: '/message',
+    component: () => import('#/views/message/index.vue'),
     meta: {
-      icon: 'humbleicons:prompt',
-      title: $t('page.prompt.title'),
+      icon: 'carbon:document',
+      title: $t('page.message.title'),
       authority: ['admin','user'],
     },
   },

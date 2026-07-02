@@ -152,21 +152,30 @@ export async function getUserInfoApi(): Promise<null | UserInfo> {
       console.warn('没有有效的认证会话');
       return null;
     }
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    console.warn('profile=', profile);
+    console.warn('profileError=', profileError);
+    if (profileError) {
+      throw profileError;
+    }
 
+    if (!profile) {
+      throw new Error(`找不到profile: ${user.id}`);
+    }
     // 将 Supabase 用户信息转换为项目所需的格式（符合 UserInfo 接口）
     return {
-      userId: user.id,
-      username:
-        user.user_metadata?.username || user.email?.split('@')[0] || 'User',
-      realName:
-        user.user_metadata?.real_name || user.email?.split('@')[0] || 'User',
-      avatar: user.user_metadata?.avatar || '',
-      desc: user.user_metadata?.desc || '',
-      homePath: '/dashboard/analytics',
+      userId: profile.user_id,
+      username: profile.nickname,
+      realName: profile.nickname,
+      avatar: profile.avatar,
+      desc: profile.desc,
       token: session.access_token,
-      roles: (user.app_metadata?.roles ??
-        user.user_metadata?.roles ??
-        []) as string[],
+      roles: [profile.role],
+      homePath: '/dashboard/analytics',
     } as UserInfo;
   } catch (error) {
     // 捕获任何异常并返回 null，避免路由导航失败
@@ -216,6 +225,10 @@ export const authLoginApi = async (email: string, password: string) => {
     password,
   });
 
+  if (error) {
+    throw new Error(error.message);
+  }
+
   return {
     user: data.user,
     session: data.session,
@@ -241,6 +254,17 @@ export const authRegisterApi = async (email: string, password: string) => {
     },
   });
 
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  // 2. 创建业务用户
+  await supabase.from('profiles').insert({
+    user_id: data.user?.id,
+    email: data.user?.email,
+    nickname: '新用户',
+    role: 'user',
+  });
   return {
     user: data.user,
     session: data.session,

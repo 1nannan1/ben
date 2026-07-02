@@ -10,6 +10,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       icon: 'line-md:chat-round',
       title: $t('page.aichat.title'),
+      authority: ['admin','user'],
     },
   },
 ];
